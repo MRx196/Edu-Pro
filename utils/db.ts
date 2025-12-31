@@ -1,12 +1,11 @@
 
 import { AppState } from '../types';
-import { supabase, useSupabase } from './supabaseClient';
+import { supabase, isSupabaseEnabled } from './supabaseClient';
 
 const DB_NAME = 'NakomkopeSaaSDB';
 const STORE_NAME = 'global_data';
 const DB_VERSION = 2;
 
-const isSupabaseEnabled = () => useSupabase();
 
 // --- IndexedDB (local) fallback ---
 export const initDB = (): Promise<IDBDatabase> => {

@@ -2,16 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const ENV_FLAG = import.meta.env.VITE_USE_SUPABASE === 'true';
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  // Keep runtime safe: if not configured, client will still be created but operations will fail.
-  console.warn('Supabase env vars are not set: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+const ENABLED = Boolean(ENV_FLAG && SUPABASE_URL && SUPABASE_ANON_KEY);
+
+if (ENV_FLAG && !ENABLED) {
+  console.warn('VITE_USE_SUPABASE is true but VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is missing. Falling back to IndexedDB.');
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false,
-  },
-});
+export const isSupabaseEnabled = () => ENABLED;
 
-export const useSupabase = () => import.meta.env.VITE_USE_SUPABASE === 'true';
+export const supabase = ENABLED
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } })
+  : (null as unknown as ReturnType<typeof createClient>);

@@ -29,46 +29,57 @@ const App: React.FC = () => {
   const [isClearOpen, setIsClearOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
 
+  const [bootError, setBootError] = useState<string | null>(null);
+
   useEffect(() => {
     const init = async () => {
-      const saved = await loadFromDB();
-      let currentState: AppState;
-      
-      if (saved) {
-        currentState = { ...saved, currentUserRole: null, currentSchoolId: null, isLoggedIn: false };
-      } else {
-        currentState = {
-          schools: [],
-          superAdminPassword: '2547852',
-          currentSchoolId: null,
-          currentUserRole: null,
-          isLoggedIn: false
-        };
-      }
-
-      // Check for shared teacher link in URL
-      const params = new URLSearchParams(window.location.search);
-      const schoolId = params.get('schoolId');
-      const role = params.get('role');
-
-      if (schoolId && role === 'TEACHER') {
-        const targetSchool = currentState.schools.find(s => s.id === schoolId);
-        if (targetSchool) {
-          currentState.currentSchoolId = schoolId;
-          currentState.currentUserRole = 'TEACHER';
-          setIsTokenAuthOpen(true);
+      try {
+        const saved = await loadFromDB();
+        let currentState: AppState;
+        
+        if (saved) {
+          currentState = { ...saved, currentUserRole: null, currentSchoolId: null, isLoggedIn: false };
+        } else {
+          currentState = {
+            schools: [],
+            superAdminPassword: '2547852',
+            currentSchoolId: null,
+            currentUserRole: null,
+            isLoggedIn: false
+          };
         }
-      }
 
-      setAppState(currentState);
+        // Check for shared teacher link in URL
+        const params = new URLSearchParams(window.location.search);
+        const schoolId = params.get('schoolId');
+        const role = params.get('role');
+
+        if (schoolId && role === 'TEACHER') {
+          const targetSchool = currentState.schools.find(s => s.id === schoolId);
+          if (targetSchool) {
+            currentState.currentSchoolId = schoolId;
+            currentState.currentUserRole = 'TEACHER';
+            setIsTokenAuthOpen(true);
+          }
+        }
+
+        setAppState(currentState);
+      } catch (err: any) {
+        console.error('Initialization failed', err);
+        setBootError(err?.message || String(err));
+        // Also show via global overlay for visibility
+        try { window.__showDebug && window.__showDebug('Initialization failed: ' + (err?.message || String(err))); } catch (e) {}
+      }
     };
     init();
   }, []);
+
 
   useEffect(() => {
     if (appState) saveToDB(appState);
   }, [appState]);
 
+  if (bootError) return <div className="h-screen flex items-center justify-center font-bold text-red-600">Initialization error: {bootError}</div>;
   if (!appState) return <div className="h-screen flex items-center justify-center font-bold">Initializing System...</div>;
 
   const currentSchool = appState.schools.find(s => s.id === appState.currentSchoolId);

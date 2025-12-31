@@ -46,5 +46,41 @@
 </head>
   <body>
     <div id="root"></div>
+
+    <!-- Debug overlay: shows global JS errors and unhandled rejections so we can see issues even if React fails to render -->
+    <div id="debug-overlay" style="position:fixed;left:12px;bottom:12px;right:12px;max-height:40vh;overflow:auto;z-index:99999;background:rgba(0,0,0,0.8);color:#fff;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;display:none;">
+      <div style="font-weight:700;margin-bottom:8px;">Debug Overlay — JS Errors</div>
+      <div id="debug-messages"></div>
+      <div style="margin-top:8px;color:#f3f4f6;opacity:0.8;">Open the browser console for more details.</div>
+      <button id="debug-close" style="position:absolute;right:8px;top:8px;background:#111;color:#fff;border:none;padding:6px;border-radius:4px;cursor:pointer;">Close</button>
+    </div>
+
+    <script>
+      (function () {
+        const overlay = document.getElementById('debug-overlay');
+        const messages = document.getElementById('debug-messages');
+        const closeBtn = document.getElementById('debug-close');
+        function show(msg) {
+          if (messages) {
+            const el = document.createElement('div');
+            el.style.marginBottom = '6px';
+            el.textContent = (new Date()).toISOString() + ' — ' + msg;
+            messages.appendChild(el);
+            overlay.style.display = 'block';
+          }
+        }
+        closeBtn && closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
+        window.addEventListener('error', (e) => {
+          try { show('Error: ' + (e.error && e.error.message ? e.error.message : e.message || e)); } catch (err) { console.error(err); }
+          console.error('Global error caught by overlay:', e.error || e.message || e);
+        });
+        window.addEventListener('unhandledrejection', (e) => {
+          try { show('UnhandledRejection: ' + (e.reason && e.reason.message ? e.reason.message : JSON.stringify(e.reason)) ); } catch (err) { console.error(err); }
+          console.error('Unhandled rejection caught by overlay:', e.reason || e);
+        });
+        // Also expose a manual method for app code to surface errors
+        window.__showDebug = (m) => { show(m); };
+      })();
+    </script>
   </body>
 </html>

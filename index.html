@@ -47,6 +47,19 @@
   <body>
     <div id="root"></div>
 
+    <!-- Early health banner (shows whether inline JS runs at all) -->
+    <div id="app-health" style="position:fixed;left:12px;top:12px;background:#10b981;color:white;padding:6px 10px;border-radius:6px;font-weight:700;z-index:99999;">JS not initialized</div>
+    <script>
+      // This inline script runs as the page parses. If it changes the banner text, we know JS runs.
+      try {
+        const h = document.getElementById('app-health');
+        if (h) {
+          h.textContent = 'Inline JS executed — waiting for app';
+          console.log('[health] Inline JS executed');
+        }
+      } catch (e) { console.error('[health] inline script error', e); }
+    </script>
+
     <!-- Debug overlay: shows global JS errors and unhandled rejections so we can see issues even if React fails to render -->
     <div id="debug-overlay" style="position:fixed;left:12px;bottom:12px;right:12px;max-height:40vh;overflow:auto;z-index:99999;background:rgba(0,0,0,0.8);color:#fff;padding:12px;border-radius:8px;font-family:monospace;font-size:12px;display:none;">
       <div style="font-weight:700;margin-bottom:8px;">Debug Overlay — JS Errors</div>
@@ -82,5 +95,8 @@
         window.__showDebug = (m) => { show(m); };
       })();
     </script>
+
+    <!-- Vite entry: load the app module -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

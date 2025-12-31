@@ -28,3 +28,21 @@ CREATE POLICY allow_write ON app_state
   FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- Insert / upsert a starter row with a default super admin password
+-- This ensures the app has a master key to log in as SUPER_ADMIN
+INSERT INTO app_state (id, state, updated_at)
+VALUES (
+  'app_state',
+  jsonb_build_object(
+    'schools', jsonb '[]',
+    'superAdminPassword', '2547852',
+    'currentSchoolId', NULL,
+    'currentUserRole', NULL,
+    'isLoggedIn', false
+  ),
+  now()
+)
+ON CONFLICT (id) DO UPDATE
+  SET state = app_state.state || EXCLUDED.state,
+      updated_at = EXCLUDED.updated_at;

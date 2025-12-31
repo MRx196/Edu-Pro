@@ -1,10 +1,14 @@
 
 import { AppState } from '../types';
+import { supabase, useSupabase } from './supabaseClient';
 
 const DB_NAME = 'NakomkopeSaaSDB';
 const STORE_NAME = 'global_data';
 const DB_VERSION = 2;
 
+const isSupabaseEnabled = () => useSupabase();
+
+// --- IndexedDB (local) fallback ---
 export const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -19,7 +23,18 @@ export const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
+// --- Save state (either Supabase or IndexedDB) ---
 export const saveToDB = async (state: AppState): Promise<void> => {
+  if (isSupabaseEnabled()) {
+    // Ensure you have created a table `app_state` in Supabase with columns:
+    // id (text, primary key), state (jsonb), updated_at (timestamp)
+    const { error } = await supabase
+      .from('app_state')
+      .upsert({ id: 'app_state', state, updated_at: new Date() });
+    if (error) throw error;
+    return;
+  }
+
   const db = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -32,6 +47,18 @@ export const saveToDB = async (state: AppState): Promise<void> => {
 };
 
 export const loadFromDB = async (): Promise<AppState | null> => {
+  if (isSupabaseEnabled()) {
+    const { data, error } = await supabase
+      .from('app_state')
+      .select('state')
+      .eq('id', 'app_state')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    // `data.state` contains the JSON stored in the row
+    return data.state as AppState | null;
+  }
+
   const db = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readonly');
@@ -42,16 +69,24 @@ export const loadFromDB = async (): Promise<AppState | null> => {
   });
 };
 
-// Fix: Implement exportDatabase to handle JSON data export for backups
+// Export DB (backup) as JSON string
 export const exportDatabase = async (): Promise<string> => {
   const state = await loadFromDB();
   return JSON.stringify(state);
 };
 
-// Fix: Implement importDatabase to restore the global app state from a backup file
+// Import DB from JSON string (restore)
 export const importDatabase = async (json: string): Promise<void> => {
   const state = JSON.parse(json);
-  if (state) {
-    await saveToDB(state);
+  if (!state) return;
+
+  if (isSupabaseEnabled()) {
+    const { error } = await supabase
+      .from('app_state')
+      .upsert({ id: 'app_state', state, updated_at: new Date() });
+    if (error) throw error;
+    return;
   }
+
+  await saveToDB(state);
 };

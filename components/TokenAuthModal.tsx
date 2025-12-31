@@ -24,14 +24,13 @@ const TokenAuthModal: React.FC<TokenAuthModalProps> = ({ onClose, onSuccess, set
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-none md:rounded-3xl shadow-2xl w-full max-w-sm md:max-w-sm overflow-hidden h-full md:h-auto animate-in zoom-in-95 duration-200">
         <div className="p-8 text-center border-b border-slate-100 bg-slate-50">
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <i className="fas fa-key text-2xl"></i>
           </div>
           <h3 className="text-2xl font-bold text-slate-800">Teacher Access</h3>
-          <p className="text-slate-500 text-sm mt-1">Enter your assigned access token</p>
-        </div>
+          <p className="text-slate-500 text-sm mt-1">Enter your assigned access token</p>          <button onClick={onClose} className="absolute right-4 top-4 w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors md:hidden"><i className="fas fa-times"></i></button>        </div>
         
         <form onSubmit={handleVerify} className="p-8 space-y-4">
           {error && <div className="p-3 bg-red-50 text-red-600 text-sm font-bold rounded-lg border border-red-100 text-center">{error}</div>}

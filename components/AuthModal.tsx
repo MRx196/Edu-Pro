@@ -37,7 +37,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ mode, school, onClose, onSuccess,
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-none md:rounded-[2rem] shadow-2xl w-full max-w-sm md:max-w-sm overflow-hidden h-full md:h-auto animate-in zoom-in-95 duration-200">
         <div className="p-8 text-center bg-slate-50 border-b border-slate-100">
            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${mode === 'SUPER' ? 'bg-black text-white' : 'bg-indigo-100 text-indigo-600'}`}>
              <i className={`fas ${mode === 'SUPER' ? 'fa-user-shield' : 'fa-lock'} text-2xl`}></i>

@@ -27,12 +27,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ schools, onSelectSchool, onSu
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Multitenant Portal Active</span>
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter mb-6 uppercase italic leading-none">
+          <h1 className="text-4xl md:text-8xl font-black text-slate-900 tracking-tighter mb-6 uppercase italic leading-tight md:leading-none">
             Edu Pro <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-500">School</span><br/>Management
           </h1>
           
-          <p className="max-w-2xl mx-auto text-slate-500 font-bold text-lg uppercase tracking-tight">
-            Streamlined administration for modern educational institutions. 
+          <p className="max-w-2xl mx-auto text-slate-500 font-bold text-base md:text-lg uppercase tracking-tight">
+            Streamlined administration for modern educational institutions.
             <br className="hidden md:block" /> Select your school portal below to begin.
           </p>
         </div>
@@ -44,7 +44,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ schools, onSelectSchool, onSu
               key={school.id}
               onClick={() => onSelectSchool(school)}
               style={{ animationDelay: `${index * 100}ms` }}
-              className="group relative bg-white rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/50 hover:shadow-indigo-200/50 hover:-translate-y-4 transition-all duration-500 text-left p-10 animate-in fade-in slide-in-from-bottom-10"
+              className="group relative bg-white rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/50 hover:shadow-indigo-200/50 hover:-translate-y-4 transition-all duration-500 text-left p-6 md:p-10 animate-in fade-in slide-in-from-bottom-10"
             >
               {/* Card Decoration */}
               <div className="absolute top-0 right-0 w-40 h-40 bg-slate-50 rounded-full -mr-20 -mt-20 opacity-50 group-hover:bg-indigo-50 transition-colors duration-500"></div>
@@ -107,7 +107,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ schools, onSelectSchool, onSu
           
           <button 
             onClick={onSuperAdmin}
-            className="group relative px-12 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] overflow-hidden hover:bg-black transition-all shadow-2xl shadow-slate-400/50"
+            className="group relative w-full md:w-auto px-6 md:px-12 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] overflow-hidden hover:bg-black transition-all shadow-2xl shadow-slate-400/50"
           >
             <span className="relative z-10 flex items-center gap-3">
               <i className="fas fa-user-shield group-hover:rotate-12 transition-transform"></i> 

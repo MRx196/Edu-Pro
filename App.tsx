@@ -201,25 +201,47 @@ const App: React.FC = () => {
     setView('landing');
   };
 
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-100">
       {/* Dynamic Header */}
       {view !== 'landing' && (
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-4 flex justify-between items-center shadow-sm">
+        <header className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shadow-sm relative">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => view === 'super' ? setView('super') : setView('school')}>
              {view === 'super' ? (
-                <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white"><i className="fas fa-user-shield"></i></div>
+                <div className="w-9 h-9 bg-black rounded-lg flex items-center justify-center text-white"><i className="fas fa-user-shield"></i></div>
              ) : (
-                currentSchool?.logo ? <img src={currentSchool.logo} className="w-10 h-10 object-contain" /> : <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">{currentSchool?.name[0]}</div>
+                currentSchool?.logo ? <img src={currentSchool.logo} className="w-9 h-9 object-contain" /> : <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">{currentSchool?.name[0]}</div>
              )}
-             <div>
+             <div className="hidden sm:block">
                <h1 className="text-sm font-black uppercase tracking-tight">{view === 'super' ? 'SaaS Controller' : currentSchool?.name}</h1>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{appState.currentUserRole?.replace('_', ' ')}</p>
              </div>
           </div>
-          <button onClick={logout} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-600 border border-slate-200 rounded-xl transition-all">
-            <i className="fas fa-sign-out-alt mr-2"></i>Exit {view === 'super' ? 'Admin' : 'School'}
-          </button>
+
+          <div className="flex items-center gap-2">
+            {/* Mobile: hamburger menu */}
+            <button onClick={() => setMobileMenuOpen(v => !v)} className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 md:hidden">
+              <i className="fas fa-bars"></i>
+            </button>
+
+            {/* Desktop actions */}
+            <div className="hidden md:flex items-center gap-3">
+              <button onClick={logout} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-600 border border-slate-200 rounded-xl transition-all">
+                <i className="fas fa-sign-out-alt mr-2"></i>Exit {view === 'super' ? 'Admin' : 'School'}
+              </button>
+            </div>
+
+            {/* Mobile menu dropdown */}
+            {mobileMenuOpen && (
+              <div className="absolute right-4 top-full mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-lg p-2 md:hidden z-50">
+                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3"><i className="fas fa-sign-out-alt text-sm"></i> Exit</button>
+                <button onClick={() => { setView('settings'); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3"><i className="fas fa-gear text-sm"></i> Settings</button>
+                <button onClick={() => { setIsManageOpen(true); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3"><i className="fas fa-user-plus text-sm"></i> Manage Students</button>
+              </div>
+            )}
+          </div>
         </header>
       )}
 

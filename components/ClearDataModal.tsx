@@ -26,10 +26,10 @@ const ClearDataModal: React.FC<ClearDataModalProps> = ({ onClose, onClear }) => 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in slide-in-from-top-4 duration-200">
+      <div className="bg-white rounded-none md:rounded-2xl shadow-2xl w-full max-w-md md:max-w-md animate-in slide-in-from-top-4 duration-200 h-full md:h-auto">
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h3 className="text-xl font-bold text-slate-800">Clear Data</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><i className="fas fa-times"></i></button>
+          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors md:hidden"><i className="fas fa-times"></i></button>
         </div>
         
         <div className="p-6 space-y-6">

@@ -59,6 +59,7 @@ const BulkExportModal: React.FC<BulkExportModalProps> = ({ onClose, appState }) 
         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
           <h3 className="text-xl font-bold text-slate-800">Bulk Export</h3>
           <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors md:hidden"><i className="fas fa-times"></i></button>
+        </div>
         <div className="p-6 space-y-6">
           <div className="space-y-2">
             <label className="block text-sm font-bold text-slate-700">Select Class</label>

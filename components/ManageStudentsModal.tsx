@@ -68,7 +68,10 @@ const ManageStudentsModal: React.FC<ManageStudentsModalProps> = ({ onClose, onAd
             <h3 className="text-xl font-bold text-slate-800">Manage Students</h3>
             <p className="text-xs text-slate-500 font-medium mt-0.5">Add students to class rolls</p>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors md:hidden">
+          <button onClick={onClose} className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-colors md:hidden"> 
+            <i className="fas fa-times"></i>
+          </button>
+
           {/* Tabs */}
           <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
             <button 

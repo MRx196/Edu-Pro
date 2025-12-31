@@ -49,12 +49,23 @@ const App: React.FC = () => {
           };
         }
 
-      // Ensure a master super admin password exists (idempotent)
-      if (!currentState.superAdminPassword) {
-        currentState.superAdminPassword = '2547852';
-        // The appState effect will persist this change via saveToDB
-        console.info('Set default superAdminPassword');
-      }
+        // Ensure a master super admin password exists (idempotent)
+        if (!currentState.superAdminPassword) {
+          currentState.superAdminPassword = '2547852';
+          // The appState effect will persist this change via saveToDB
+          console.info('Set default superAdminPassword');
+        }
+
+        // Check for shared teacher link in URL
+        const params = new URLSearchParams(window.location.search);
+        const schoolId = params.get('schoolId');
+        const role = params.get('role');
+
+        if (schoolId && role === 'TEACHER') {
+          const targetSchool = currentState.schools.find(s => s.id === schoolId);
+          if (targetSchool) {
+            currentState.currentSchoolId = schoolId;
+            currentState.currentUserRole = 'TEACHER';
             setIsTokenAuthOpen(true);
           }
         }

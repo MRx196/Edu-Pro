@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AppState, School, UserRole, ClassLevel, Subject, StudentScore } from './types';
 import { DEFAULT_SCHOOL_SETTINGS, SUBJECTS } from './constants';
 import { loadFromDB, saveToDB } from './utils/db';
+import { isSupabaseEnabled } from './utils/supabaseClient';
 
 // Components
 import LandingPage from './components/LandingPage';
@@ -79,6 +80,70 @@ const App: React.FC = () => {
       }
     };
     init();
+
+    // Subscribe to remote updates so changes on other devices update this client in real-time
+    // We set up the subscription here so it exists from app start
+    let unsubscribe: (() => void) | null = null;
+
+    // Lazy dynamic import to avoid bundling supabase subscription code unnecessarily
+    let pollInterval: any = null;
+    import('./utils/db').then(({ subscribeToAppState, loadFromDB: remoteLoad }) => {
+      try {
+        unsubscribe = subscribeToAppState((incoming) => {
+          if (!incoming) return;
+          setAppState(prev => {
+            // preserve session-like fields (do not overwrite local auth/session flags)
+            const merged = { ...incoming, currentUserRole: prev?.currentUserRole ?? null, currentSchoolId: prev?.currentSchoolId ?? null, isLoggedIn: prev?.isLoggedIn ?? false } as AppState;
+            try {
+              if (JSON.stringify(prev) === JSON.stringify(merged)) return prev as AppState;
+            } catch (e) {}
+            // show debug overlay
+            try { window.__showDebug && window.__showDebug('AppState updated via realtime subscription'); } catch (e) {}
+            return merged;
+          });
+        });
+
+        // If subscription is not available or fails silently, fallback to polling every 5s
+        // We start a poll that checks remote state and merges if changed
+        pollInterval = setInterval(async () => {
+          try {
+            const remote = await remoteLoad();
+            if (!remote) return;
+            setAppState(prev => {
+              const merged = { ...remote, currentUserRole: prev?.currentUserRole ?? null, currentSchoolId: prev?.currentSchoolId ?? null, isLoggedIn: prev?.isLoggedIn ?? false } as AppState;
+              try { if (JSON.stringify(prev) === JSON.stringify(merged)) return prev as AppState; } catch (e) {}
+              try { window.__showDebug && window.__showDebug('AppState updated via polling'); } catch (e) {}
+              return merged;
+            });
+          } catch (e) {
+            // ignore polling errors
+          }
+        }, 5000);
+
+      } catch (e) {
+        console.warn('Realtime subscription setup failed:', e);
+      }
+    }).catch(err => {
+      console.warn('Could not import subscribeToAppState', err);
+      // Start polling via local import fallback
+      pollInterval = setInterval(async () => {
+        try {
+          const remote = await loadFromDB();
+          if (!remote) return;
+          setAppState(prev => {
+            const merged = { ...remote, currentUserRole: prev?.currentUserRole ?? null, currentSchoolId: prev?.currentSchoolId ?? null, isLoggedIn: prev?.isLoggedIn ?? false } as AppState;
+            try { if (JSON.stringify(prev) === JSON.stringify(merged)) return prev as AppState; } catch (e) {}
+            try { window.__showDebug && window.__showDebug('AppState updated via polling'); } catch (e) {}
+            return merged;
+          });
+        } catch (e) {}
+      }, 5000);
+    });
+
+    return () => {
+      try { unsubscribe && unsubscribe(); } catch (e) {}
+      try { if (pollInterval) clearInterval(pollInterval); } catch (e) {}
+    };
   }, []);
 
 
@@ -86,8 +151,22 @@ const App: React.FC = () => {
     if (appState) saveToDB(appState);
   }, [appState]);
 
+  const wantsSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
+  const supabaseActive = isSupabaseEnabled();
+
   if (bootError) return <div className="h-screen flex items-center justify-center font-bold text-red-600">Initialization error: {bootError}</div>;
   if (!appState) return <div className="h-screen flex items-center justify-center font-bold">Initializing System...</div>;
+
+  // Show a small notice when Supabase was requested but isn't active to avoid confusion
+  const SupabaseWarning = () => {
+    if (!wantsSupabase) return null;
+    if (supabaseActive) return null;
+    return (
+      <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm mb-4 rounded">
+        ⚠️ Supabase is requested (VITE_USE_SUPABASE=true) but **not active** — check your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables.
+      </div>
+    );
+  };
 
   const currentSchool = appState.schools.find(s => s.id === appState.currentSchoolId);
 
@@ -145,6 +224,7 @@ const App: React.FC = () => {
       )}
 
       <main className="p-6 md:p-10">
+        <SupabaseWarning />
         {view === 'landing' && (
           <LandingPage 
             schools={appState.schools} 

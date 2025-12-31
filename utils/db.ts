@@ -89,3 +89,41 @@ export const importDatabase = async (json: string): Promise<void> => {
 
   await saveToDB(state);
 };
+
+// --- Realtime subscription (Supabase) ---
+export const subscribeToAppState = (onChange: (state: AppState | null) => void) => {
+  if (!isSupabaseEnabled()) {
+    console.warn('subscribeToAppState called but Supabase is disabled.');
+    return () => {};
+  }
+
+  // Subscribe to changes on the app_state row
+  // supabase-js v2: use channels
+  const channel = supabase.channel('public:app_state');
+
+  channel.on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: "id=eq.app_state" }, (payload: any) => {
+    try {
+      // payload.record or payload.new may contain the row depending on event
+      const record = payload.new || payload.record || payload;
+      if (record && record.state) {
+        onChange(record.state as AppState);
+      } else {
+        // fallback: re-load from DB
+        loadFromDB().then(s => onChange(s)).catch(err => console.error('Failed to reload state after realtime event', err));
+      }
+    } catch (err) {
+      console.error('Error handling realtime payload', err, payload);
+    }
+  });
+
+  channel.subscribe();
+
+  return () => {
+    try {
+      channel.unsubscribe();
+    } catch (e) {
+      // supabase client may also support removeChannel
+      try { supabase.removeChannel(channel); } catch (er) {}
+    }
+  };
+};

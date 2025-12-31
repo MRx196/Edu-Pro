@@ -38,5 +38,7 @@ export const DEFAULT_SCHOOL_SETTINGS: SchoolSettings = {
   maxAttendance: 75,
   interests: ['Football', 'Music', 'Reading', 'Art', 'Computing', 'Gardening'],
   conducts: ['Accommodating', 'Respectful', 'Hardworking', 'Needs Improvement', 'Excellent', 'Disciplined'],
-  teacherTokens: ['TEACH2024']
+  teacherTokens: [],
+  teachers: [],
+  secondaryAdmins: []
 };

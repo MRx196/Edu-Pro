@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { AppState, School, UserRole, ClassLevel, Subject, StudentScore } from './types';
 import { DEFAULT_SCHOOL_SETTINGS, SUBJECTS } from './constants';
 import { loadFromDB, saveToDB } from './utils/db';
-import { isSupabaseEnabled } from './utils/supabaseClient';
 
 // Components
 import LandingPage from './components/LandingPage';
@@ -30,143 +29,47 @@ const App: React.FC = () => {
   const [isClearOpen, setIsClearOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
 
-  const [bootError, setBootError] = useState<string | null>(null);
-
   useEffect(() => {
     const init = async () => {
-      try {
-        const saved = await loadFromDB();
-        let currentState: AppState;
-        
-        if (saved) {
-          currentState = { ...saved, currentUserRole: null, currentSchoolId: null, isLoggedIn: false };
-        } else {
-          currentState = {
-            schools: [],
-            superAdminPassword: '2547852',
-            currentSchoolId: null,
-            currentUserRole: null,
-            isLoggedIn: false
-          };
-        }
-
-        // Ensure a master super admin password exists (idempotent)
-        if (!currentState.superAdminPassword) {
-          currentState.superAdminPassword = '2547852';
-          // The appState effect will persist this change via saveToDB
-          console.info('Set default superAdminPassword');
-        }
-
-        // Check for shared teacher link in URL
-        const params = new URLSearchParams(window.location.search);
-        const schoolId = params.get('schoolId');
-        const role = params.get('role');
-
-        if (schoolId && role === 'TEACHER') {
-          const targetSchool = currentState.schools.find(s => s.id === schoolId);
-          if (targetSchool) {
-            currentState.currentSchoolId = schoolId;
-            currentState.currentUserRole = 'TEACHER';
-            setIsTokenAuthOpen(true);
-          }
-        }
-
-        setAppState(currentState);
-      } catch (err: any) {
-        console.error('Initialization failed', err);
-        setBootError(err?.message || String(err));
-        // Also show via global overlay for visibility
-        try { window.__showDebug && window.__showDebug('Initialization failed: ' + (err?.message || String(err))); } catch (e) {}
+      const saved = await loadFromDB();
+      let currentState: AppState;
+      
+      if (saved) {
+        currentState = { ...saved, currentUserRole: null, currentSchoolId: null, isLoggedIn: false };
+      } else {
+        currentState = {
+          schools: [],
+          superAdminPassword: '2547852',
+          currentSchoolId: null,
+          currentUserRole: null,
+          isLoggedIn: false
+        };
       }
+
+      // Check for shared teacher link in URL
+      const params = new URLSearchParams(window.location.search);
+      const schoolId = params.get('schoolId');
+      const role = params.get('role');
+
+      if (schoolId && role === 'TEACHER') {
+        const targetSchool = currentState.schools.find(s => s.id === schoolId);
+        if (targetSchool) {
+          currentState.currentSchoolId = schoolId;
+          currentState.currentUserRole = 'TEACHER';
+          setIsTokenAuthOpen(true);
+        }
+      }
+
+      setAppState(currentState);
     };
     init();
-
-    // Subscribe to remote updates so changes on other devices update this client in real-time
-    // We set up the subscription here so it exists from app start
-    let unsubscribe: (() => void) | null = null;
-
-    // Lazy dynamic import to avoid bundling supabase subscription code unnecessarily
-    let pollInterval: any = null;
-    import('./utils/db').then(({ subscribeToAppState, loadFromDB: remoteLoad }) => {
-      try {
-        unsubscribe = subscribeToAppState((incoming) => {
-          if (!incoming) return;
-          setAppState(prev => {
-            // preserve session-like fields (do not overwrite local auth/session flags)
-            const merged = { ...incoming, currentUserRole: prev?.currentUserRole ?? null, currentSchoolId: prev?.currentSchoolId ?? null, isLoggedIn: prev?.isLoggedIn ?? false } as AppState;
-            try {
-              if (JSON.stringify(prev) === JSON.stringify(merged)) return prev as AppState;
-            } catch (e) {}
-            // show debug overlay
-            try { window.__showDebug && window.__showDebug('AppState updated via realtime subscription'); } catch (e) {}
-            return merged;
-          });
-        });
-
-        // If subscription is not available or fails silently, fallback to polling every 5s
-        // We start a poll that checks remote state and merges if changed
-        pollInterval = setInterval(async () => {
-          try {
-            const remote = await remoteLoad();
-            if (!remote) return;
-            setAppState(prev => {
-              const merged = { ...remote, currentUserRole: prev?.currentUserRole ?? null, currentSchoolId: prev?.currentSchoolId ?? null, isLoggedIn: prev?.isLoggedIn ?? false } as AppState;
-              try { if (JSON.stringify(prev) === JSON.stringify(merged)) return prev as AppState; } catch (e) {}
-              try { window.__showDebug && window.__showDebug('AppState updated via polling'); } catch (e) {}
-              return merged;
-            });
-          } catch (e) {
-            // ignore polling errors
-          }
-        }, 5000);
-
-      } catch (e) {
-        console.warn('Realtime subscription setup failed:', e);
-      }
-    }).catch(err => {
-      console.warn('Could not import subscribeToAppState', err);
-      // Start polling via local import fallback
-      pollInterval = setInterval(async () => {
-        try {
-          const remote = await loadFromDB();
-          if (!remote) return;
-          setAppState(prev => {
-            const merged = { ...remote, currentUserRole: prev?.currentUserRole ?? null, currentSchoolId: prev?.currentSchoolId ?? null, isLoggedIn: prev?.isLoggedIn ?? false } as AppState;
-            try { if (JSON.stringify(prev) === JSON.stringify(merged)) return prev as AppState; } catch (e) {}
-            try { window.__showDebug && window.__showDebug('AppState updated via polling'); } catch (e) {}
-            return merged;
-          });
-        } catch (e) {}
-      }, 5000);
-    });
-
-    return () => {
-      try { unsubscribe && unsubscribe(); } catch (e) {}
-      try { if (pollInterval) clearInterval(pollInterval); } catch (e) {}
-    };
   }, []);
-
 
   useEffect(() => {
     if (appState) saveToDB(appState);
   }, [appState]);
 
-  const wantsSupabase = import.meta.env.VITE_USE_SUPABASE === 'true';
-  const supabaseActive = isSupabaseEnabled();
-
-  if (bootError) return <div className="h-screen flex items-center justify-center font-bold text-red-600">Initialization error: {bootError}</div>;
   if (!appState) return <div className="h-screen flex items-center justify-center font-bold">Initializing System...</div>;
-
-  // Show a small notice when Supabase was requested but isn't active to avoid confusion
-  const SupabaseWarning = () => {
-    if (!wantsSupabase) return null;
-    if (supabaseActive) return null;
-    return (
-      <div className="bg-yellow-100 border-l-4 border-yellow-400 p-3 text-sm mb-4 rounded">
-        ⚠️ Supabase is requested (VITE_USE_SUPABASE=true) but **not active** — check your `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables.
-      </div>
-    );
-  };
 
   const currentSchool = appState.schools.find(s => s.id === appState.currentSchoolId);
 
@@ -201,52 +104,29 @@ const App: React.FC = () => {
     setView('landing');
   };
 
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-indigo-100">
       {/* Dynamic Header */}
       {view !== 'landing' && (
-        <header className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-6 py-3 md:py-4 flex justify-between items-center shadow-sm relative">
+        <header className="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-4 flex justify-between items-center shadow-sm">
           <div className="flex items-center gap-4 cursor-pointer" onClick={() => view === 'super' ? setView('super') : setView('school')}>
              {view === 'super' ? (
-                <div className="w-9 h-9 bg-black rounded-lg flex items-center justify-center text-white"><i className="fas fa-user-shield"></i></div>
+                <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white"><i className="fas fa-user-shield"></i></div>
              ) : (
-                currentSchool?.logo ? <img src={currentSchool.logo} className="w-9 h-9 object-contain" /> : <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">{currentSchool?.name[0]}</div>
+                currentSchool?.logo ? <img src={currentSchool.logo} className="w-10 h-10 object-contain" /> : <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">{currentSchool?.name[0]}</div>
              )}
-             <div className="hidden sm:block">
+             <div>
                <h1 className="text-sm font-black uppercase tracking-tight">{view === 'super' ? 'SaaS Controller' : currentSchool?.name}</h1>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{appState.currentUserRole?.replace('_', ' ')}</p>
              </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Mobile: hamburger menu */}
-            <button onClick={() => setMobileMenuOpen(v => !v)} className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 md:hidden">
-              <i className="fas fa-bars"></i>
-            </button>
-
-            {/* Desktop actions */}
-            <div className="hidden md:flex items-center gap-3">
-              <button onClick={logout} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-600 border border-slate-200 rounded-xl transition-all">
-                <i className="fas fa-sign-out-alt mr-2"></i>Exit {view === 'super' ? 'Admin' : 'School'}
-              </button>
-            </div>
-
-            {/* Mobile menu dropdown */}
-            {mobileMenuOpen && (
-              <div className="absolute right-4 top-full mt-2 w-56 bg-white border border-slate-100 rounded-xl shadow-lg p-2 md:hidden z-50">
-                <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3"><i className="fas fa-sign-out-alt text-sm"></i> Exit</button>
-                <button onClick={() => { setView('settings'); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3"><i className="fas fa-gear text-sm"></i> Settings</button>
-                <button onClick={() => { setIsManageOpen(true); setMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-100 flex items-center gap-3"><i className="fas fa-user-plus text-sm"></i> Manage Students</button>
-              </div>
-            )}
-          </div>
+          <button onClick={logout} className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-600 border border-slate-200 rounded-xl transition-all">
+            <i className="fas fa-sign-out-alt mr-2"></i>Exit {view === 'super' ? 'Admin' : 'School'}
+          </button>
         </header>
       )}
 
       <main className="p-6 md:p-10">
-        <SupabaseWarning />
         {view === 'landing' && (
           <LandingPage 
             schools={appState.schools} 

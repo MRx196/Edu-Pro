@@ -26,11 +26,23 @@ export interface StudentScore {
   headTeacherRemark?: string;
 }
 
-// Added ClassSubjectData interface to support subject-specific student records across the application
 export interface ClassSubjectData {
   classLevel: ClassLevel;
   subject: Subject;
   students: StudentScore[];
+}
+
+export interface TeacherInfo {
+  id: string;
+  name: string;
+  assignedClass: ClassLevel;
+  token: string;
+}
+
+export interface SecondaryAdminInfo {
+  id: string;
+  username: string;
+  password: string;
 }
 
 export interface School {
@@ -47,7 +59,6 @@ export interface School {
 }
 
 export interface SchoolSettings {
-  // Added schoolName and schoolLogo to fix "does not exist in type 'SchoolSettings'" errors
   schoolName: string;
   schoolLogo: string;
   academicYear: string;
@@ -56,7 +67,9 @@ export interface SchoolSettings {
   maxAttendance: number;
   interests: string[];
   conducts: string[];
-  teacherTokens: string[];
+  teacherTokens: string[]; // Legacy - kept for compatibility
+  teachers: TeacherInfo[];
+  secondaryAdmins: SecondaryAdminInfo[];
 }
 
 export interface AppState {
